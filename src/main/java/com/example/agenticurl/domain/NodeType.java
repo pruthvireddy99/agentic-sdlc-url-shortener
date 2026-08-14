@@ -1,0 +1,16 @@
+package com.example.agenticurl.domain;
+
+public enum NodeType {
+    REQUIREMENTS,
+    CODEBASE_REASONING,
+    IMPACT_ANALYSIS,
+    AMBIGUITY_REVIEW,
+    ARCHITECTURE,
+    IMPLEMENTATION,
+    TESTING,
+    DOCUMENTATION,
+    RELEASE_READINESS,
+    HUMAN_APPROVAL,
+    RELEASE,
+    REPLAN
+}

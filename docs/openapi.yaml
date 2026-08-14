@@ -1,0 +1,139 @@
+openapi: 3.0.3
+info:
+  title: Governed Agentic URL Shortener API
+  version: 0.0.1
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/urls:
+    post:
+      summary: Create a short URL
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [originalUrl]
+              properties:
+                originalUrl: {type: string, format: uri}
+                ttlHours: {type: integer, minimum: 1, maximum: 8760}
+      responses:
+        '201': {description: Created}
+        '400': {description: Invalid request}
+  /{code}:
+    get:
+      summary: Redirect to the original URL
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: {type: string}
+      responses:
+        '302': {description: Redirect}
+        '404': {description: Missing or expired code}
+  /api/v1/urls/{code}/analytics:
+    get:
+      summary: Read click analytics
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: {type: string}
+      responses:
+        '200': {description: Analytics}
+        '404': {description: Missing code}
+  /api/v1/agent-runs:
+    post:
+      summary: Start an agentic SDLC run
+      parameters:
+        - {$ref: '#/components/parameters/AgentControlToken'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scenario, requirement]
+              properties:
+                scenario:
+                  type: string
+                  enum: [GREENFIELD, BROWNFIELD, AMBIGUOUS]
+                requirement: {type: string}
+                initialClarification: {type: string}
+      responses:
+        '202': {description: Run accepted}
+        '401': {description: Unauthorized}
+  /api/v1/agent-runs/{id}:
+    get:
+      summary: Get orchestration state
+      parameters:
+        - {$ref: '#/components/parameters/AgentControlToken'}
+        - {$ref: '#/components/parameters/RunId'}
+      responses:
+        '200': {description: Run state}
+  /api/v1/agent-runs/{id}/approve:
+    post:
+      summary: Approve release gate
+      parameters:
+        - {$ref: '#/components/parameters/AgentControlToken'}
+        - {$ref: '#/components/parameters/RunId'}
+      responses:
+        '202': {description: Run resumed}
+  /api/v1/agent-runs/{id}/clarify:
+    post:
+      summary: Resolve an ambiguity checkpoint
+      parameters:
+        - {$ref: '#/components/parameters/AgentControlToken'}
+        - {$ref: '#/components/parameters/RunId'}
+      responses:
+        '202': {description: Run resumed}
+  /api/v1/agent-runs/{id}/replan:
+    post:
+      summary: Replan after a material upstream change
+      parameters:
+        - {$ref: '#/components/parameters/AgentControlToken'}
+        - {$ref: '#/components/parameters/RunId'}
+      responses:
+        '202': {description: Run replanned}
+  /api/v1/agent-runs/{id}/fallback:
+    post:
+      summary: Apply a policy-bounded fallback
+      parameters:
+        - {$ref: '#/components/parameters/AgentControlToken'}
+        - {$ref: '#/components/parameters/RunId'}
+      responses:
+        '202': {description: Run resumed}
+  /api/v1/agent-runs/{id}/stop:
+    post:
+      summary: Safe stop
+      parameters:
+        - {$ref: '#/components/parameters/AgentControlToken'}
+        - {$ref: '#/components/parameters/RunId'}
+      responses:
+        '200': {description: Run stopped}
+  /api/v1/agent-runs/{id}/rollback:
+    post:
+      summary: Rollback release-related state
+      parameters:
+        - {$ref: '#/components/parameters/AgentControlToken'}
+        - {$ref: '#/components/parameters/RunId'}
+      responses:
+        '200': {description: Run rolled back}
+components:
+  parameters:
+    AgentControlToken:
+      name: X-Agent-Control-Token
+      in: header
+      required: true
+      schema: {type: string}
+    RunId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
